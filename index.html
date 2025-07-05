@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PR Launch Navigator</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide-react/0.263.1/lucide-react.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        const { AlertTriangle, TrendingUp, Users, DollarSign, Clock, Star } = lucide;
+
+        const PRLaunchSimulator = () => {
+            const [currentPhase, setCurrentPhase] = useState('intro');
+            const [gameState, setGameState] = useState({
+                budget: 100000,
+                timeline: 8,
+                mediaSentiment: 50,
+                socialBuzz: 30,
+                stakeholderConfidence: 70,
+                salesImpact: 0,
+                decisions: [],
+                currentScenario: 0
+            });
+
+            const scenarios = [
+                {
+                    phase: 'planning',
+                    title: 'Launch Strategy Planning',
+                    description: 'Your company is launching "EcoSmart Home" - a revolutionary smart home system that reduces energy consumption by 40%. You have 8 weeks and $100,000 budget. A competitor just announced a similar product launching in 6 weeks.',
+                    options: [
+                        {
+                            text: 'Accelerate timeline to launch in 5 weeks, focus on being first to market',
+                            impact: { timeline: -3, budget: -20000, stakeholderConfidence: -10, mediaSentiment: 10 },
+                            outcome: 'Rushed launch creates buzz but raises quality concerns'
+                        },
+                        {
+                            text: 'Stick to original timeline, emphasize superior features and testing',
+                            impact: { mediaSentiment: 15, stakeholderConfidence: 10, socialBuzz: 5 },
+                            outcome: 'Steady approach builds confidence but competitor gains early attention'
+                        },
+                        {
+                            text: 'Delay launch by 2 weeks to add exclusive partnership with major retailer',
+                            impact: { timeline: 2, budget: -15000, stakeholderConfidence: 20, mediaSentiment: 5 },
+                            outcome: 'Partnership announcement generates premium positioning'
+                        }
+                    ]
+                },
+                {
+                    phase: 'prelaunch',
+                    title: 'Media Briefing Crisis',
+                    description: 'Two weeks before launch, a tech blogger leaks preliminary product specs with some inaccuracies, causing confusion. Social media is buzzing with mixed reactions.',
+                    options: [
+                        {
+                            text: 'Immediately issue detailed correction with full specifications',
+                            impact: { mediaSentiment: 10, socialBuzz: 15, stakeholderConfidence: 5 },
+                            outcome: 'Transparency builds trust but gives competitors full intel'
+                        },
+                        {
+                            text: 'Release teaser campaign highlighting key benefits without full specs',
+                            impact: { socialBuzz: 20, mediaSentiment: 5, budget: -5000 },
+                            outcome: 'Maintains mystery and excitement while controlling narrative'
+                        },
+                        {
+                            text: 'Ignore the leak and proceed with planned announcement schedule',
+                            impact: { mediaSentiment: -15, socialBuzz: -10, stakeholderConfidence: -5 },
+                            outcome: 'Silence allows misinformation to spread unchecked'
+                        }
+                    ]
+                },
+                {
+                    phase: 'launch',
+                    title: 'Launch Day Surprise',
+                    description: 'Launch day arrives! Your event is going well, but breaking news: a major tech company just announced they\'re acquiring your biggest competitor. Media attention is shifting.',
+                    options: [
+                        {
+                            text: 'Pivot presentation to focus on being the independent alternative',
+                            impact: { mediaSentiment: 20, socialBuzz: 10, stakeholderConfidence: 15 },
+                            outcome: 'Successfully positions as David vs. Goliath story'
+                        },
+                        {
+                            text: 'Announce major customer partnership to compete with the news',
+                            impact: { mediaSentiment: 15, socialBuzz: 25, budget: -10000, stakeholderConfidence: 10 },
+                            outcome: 'Partnership announcement regains media attention'
+                        },
+                        {
+                            text: 'Continue with original presentation, stay focused on product',
+                            impact: { mediaSentiment: -5, socialBuzz: -15, stakeholderConfidence: 5 },
+                            outcome: 'Steady approach but overshadowed by bigger news'
+                        }
+                    ]
+                },
+                {
+                    phase: 'postlaunch',
+                    title: 'Customer Feedback Challenge',
+                    description: 'Week 2 post-launch: Early adopters love the product, but some report connectivity issues. A viral TikTok video shows the problem, getting 2M views. Local news picks it up.',
+                    options: [
+                        {
+                            text: 'Immediately announce free software update and extended warranty',
+                            impact: { mediaSentiment: 15, socialBuzz: 10, budget: -25000, stakeholderConfidence: 20 },
+                            outcome: 'Quick response wins customer loyalty and media praise'
+                        },
+                        {
+                            text: 'Release detailed technical explanation and troubleshooting guide',
+                            impact: { mediaSentiment: 5, socialBuzz: -5, stakeholderConfidence: 10 },
+                            outcome: 'Transparent but technical response satisfies some concerns'
+                        },
+                        {
+                            text: 'Offer individual support to affected customers quietly',
+                            impact: { mediaSentiment: -10, socialBuzz: -20, budget: -15000, stakeholderConfidence: -15 },
+                            outcome: 'Quiet approach seen as trying to hide problems'
+                        }
+                    ]
+                }
+            ];
+
+            const handleDecision = (optionIndex) => {
+                const currentScenario = scenarios[gameState.currentScenario];
+                const selectedOption = currentScenario.options[optionIndex];
+                
+                const newGameState = {
+                    ...gameState,
+                    ...Object.keys(selectedOption.impact).reduce((acc, key) => {
+                        acc[key] = Math.max(0, Math.min(100, gameState[key] + selectedOption.impact[key]));
+                        return acc;
+                    }, {}),
+                    decisions: [...gameState.decisions, {
+                        scenario: currentScenario.title,
+                        choice: selectedOption.text,
+                        outcome: selectedOption.outcome
+                    }],
+                    currentScenario: gameState.currentScenario + 1
+                };
+
+                const avgScore = (newGameState.mediaSentiment + newGameState.socialBuzz + newGameState.stakeholderConfidence) / 3;
+                newGameState.salesImpact = Math.round(avgScore * 1.5);
+
+                setGameState(newGameState);
+                
+                if (newGameState.currentScenario >= scenarios.length) {
+                    setCurrentPhase('results');
+                } else {
+                    setCurrentPhase('scenario');
+                }
+            };
+
+            const resetGame = () => {
+                setCurrentPhase('intro');
+                setGameState({
+                    budget: 100000,
+                    timeline: 8,
+                    mediaSentiment: 50,
+                    socialBuzz: 30,
+                    stakeholderConfidence: 70,
+                    salesImpact: 0,
+                    decisions: [],
+                    currentScenario: 0
+                });
+            };
+
+            const getPerformanceLevel = () => {
+                const avgScore = (gameState.mediaSentiment + gameState.socialBuzz + gameState.stakeholderConfidence) / 3;
+                if (avgScore >= 80) return { level: 'Excellent', color: 'text-green-600', desc: 'Outstanding PR campaign!' };
+                if (avgScore >= 65) return { level: 'Good', color: 'text-blue-600', desc: 'Solid PR performance' };
+                if (avgScore >= 50) return { level: 'Average', color: 'text-yellow-600', desc: 'Mixed results' };
+                return { level: 'Poor', color: 'text-red-600', desc: 'Challenging campaign' };
+            };
+
+            if (currentPhase === 'intro') {
+                return (
+                    <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+                        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                            <h1 className="text-4xl font-bold text-gray-800 mb-4">PR Launch Navigator</h1>
+                            <p className="text-lg text-gray-600 mb-8">
+                                Master the art of product launch PR by navigating real-world scenarios and making strategic decisions that impact your campaign's success.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <h3 className="font-semibold text-blue-800 mb-2">What You'll Learn</h3>
+                                    <ul className="text-sm text-blue-700 space-y-1">
+                                        <li>• Crisis management strategies</li>
+                                        <li>• Media relations best practices</li>
+                                        <li>• Stakeholder communication</li>
+                                        <li>• Budget and timeline management</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-purple-50 p-4 rounded-lg">
+                                    <h3 className="font-semibold text-purple-800 mb-2">Key Metrics</h3>
+                                    <ul className="text-sm text-purple-700 space-y-1">
+                                        <li>• Media Sentiment</li>
+                                        <li>• Social Media Buzz</li>
+                                        <li>• Stakeholder Confidence</li>
+                                        <li>• Sales Impact</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setCurrentPhase('scenario')}
+                                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                            >
+                                Start Your PR Campaign
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPhase === 'scenario') {
+                const currentScenario = scenarios[gameState.currentScenario];
+                
+                return (
+                    <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div className="bg-green-50 p-3 rounded-lg text-center">
+                                    <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-1" />
+                                    <div className="text-sm text-green-700">Budget</div>
+                                    <div className="font-semibold text-green-800">${gameState.budget.toLocaleString()}</div>
+                                </div>
+                                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                                    <Clock className="w-6 h-6 text-blue-600 mx-auto mb-1" />
+                                    <div className="text-sm text-blue-700">Timeline</div>
+                                    <div className="font-semibold text-blue-800">{gameState.timeline} weeks</div>
+                                </div>
+                                <div className="bg-purple-50 p-3 rounded-lg text-center">
+                                    <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+                                    <div className="text-sm text-purple-700">Media Sentiment</div>
+                                    <div className="font-semibold text-purple-800">{gameState.mediaSentiment}%</div>
+                                </div>
+                                <div className="bg-orange-50 p-3 rounded-lg text-center">
+                                    <Users className="w-6 h-6 text-orange-600 mx-auto mb-1" />
+                                    <div className="text-sm text-orange-700">Social Buzz</div>
+                                    <div className="font-semibold text-orange-800">{gameState.socialBuzz}%</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex items-center mb-4">
+                                    <AlertTriangle className="w-6 h-6 text-yellow-600 mr-2" />
+                                    <h2 className="text-2xl font-bold text-gray-800">{currentScenario.title}</h2>
+                                </div>
+                                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg mb-6">
+                                    {currentScenario.description}
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4">What's your strategy?</h3>
+                                {currentScenario.options.map((option, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleDecision(index)}
+                                        className="w-full p-4 text-left bg-gray-50 hover:bg-blue-50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-200"
+                                    >
+                                        <div className="font-medium text-gray-800 mb-2">{option.text}</div>
+                                        <div className="text-sm text-gray-600">{option.outcome}</div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 text-center">
+                                <div className="text-sm text-gray-500">
+                                    Scenario {gameState.currentScenario + 1} of {scenarios.length}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPhase === 'results') {
+                const performance = getPerformanceLevel();
+                
+                return (
+                    <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+                        <div className="bg-white rounded-lg shadow-lg p-8">
+                            <div className="text-center mb-8">
+                                <Star className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">Campaign Results</h1>
+                                <div className={`text-2xl font-semibold ${performance.color} mb-2`}>
+                                    {performance.level} Performance
+                                </div>
+                                <p className="text-gray-600">{performance.desc}</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                <div className="bg-green-50 p-4 rounded-lg text-center">
+                                    <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                                    <div className="text-sm text-green-700">Media Sentiment</div>
+                                    <div className="text-2xl font-bold text-green-800">{gameState.mediaSentiment}%</div>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-lg text-center">
+                                    <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                                    <div className="text-sm text-blue-700">Social Buzz</div>
+                                    <div className="text-2xl font-bold text-blue-800">{gameState.socialBuzz}%</div>
+                                </div>
+                                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                                    <Star className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                                    <div className="text-sm text-purple-700">Stakeholder Confidence</div>
+                                    <div className="text-2xl font-bold text-purple-800">{gameState.stakeholderConfidence}%</div>
+                                </div>
+                                <div className="bg-orange-50 p-4 rounded-lg text-center">
+                                    <DollarSign className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                                    <div className="text-sm text-orange-700">Sales Impact</div>
+                                    <div className="text-2xl font-bold text-orange-800">{gameState.salesImpact}%</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Campaign Journey</h3>
+                                <div className="space-y-4">
+                                    {gameState.decisions.map((decision, index) => (
+                                        <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                                            <div className="font-medium text-gray-800 mb-1">{decision.scenario}</div>
+                                            <div className="text-sm text-gray-600 mb-2">{decision.choice}</div>
+                                            <div className="text-sm text-blue-700 italic">{decision.outcome}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 p-6 rounded-lg mb-6">
+                                <h3 className="text-lg font-semibold text-blue-800 mb-3">Key PR Learnings</h3>
+                                <div className="text-sm text-blue-700 space-y-2">
+                                    <p>• <strong>Transparency builds trust:</strong> Honest communication during crises often yields better long-term results.</p>
+                                    <p>• <strong>Speed matters:</strong> Quick responses to issues prevent them from spiraling out of control.</p>
+                                    <p>• <strong>Know your audience:</strong> Different stakeholders require different messaging approaches.</p>
+                                    <p>• <strong>Plan for the unexpected:</strong> Successful PR campaigns adapt to changing circumstances.</p>
+                                </div>
+                            </div>
+
+                            <div className="text-center">
+                                <button
+                                    onClick={resetGame}
+                                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                    Try Different Strategy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        ReactDOM.render(<PRLaunchSimulator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
